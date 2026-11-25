@@ -1,236 +1,228 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
   BriefcaseBusiness,
   ChartNoAxesCombined,
   Compass,
+  GraduationCap,
+  Landmark,
   Menu,
-  MoreHorizontal,
+  Scale,
   ShieldCheck,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { getMarketSnapshot } from "./marketData.js";
-
-const MarketChart = lazy(() => import("./MarketChart.jsx"));
+import { getAdvisoryServices } from "./marketData.js";
+import TradingViewEmbed from "./TradingViewEmbed.jsx";
 
 const navigation = [
   { label: "Overview", path: "/", icon: Compass },
   { label: "Markets", path: "/markets", icon: TrendingUp },
   { label: "Services", path: "/services", icon: BriefcaseBusiness },
 ];
-
-const instruments = [
-  { symbol: "RELIANCE", name: "Reliance Industries", price: "1,463.25", change: "+1.42%", positive: true, type: "Equity" },
-  { symbol: "HDFCBANK", name: "HDFC Bank", price: "982.60", change: "+0.86%", positive: true, type: "Equity" },
-  { symbol: "INFY", name: "Infosys Limited", price: "1,584.10", change: "-0.34%", positive: false, type: "Equity" },
-  { symbol: "NIFTY 25,000 CE", name: "NIFTY · 26 JUN", price: "184.50", change: "+3.18%", positive: true, type: "Options" },
-];
-
-const sampleClientResults = [
-  { client: "Client · 04", pnl: 2450 },
-  { client: "Client · 12", pnl: -850 },
-  { client: "Client · 27", pnl: 1180 },
-];
-
-const services = [
+const serviceIcons = [ChartNoAxesCombined, TrendingUp, Compass, BriefcaseBusiness, ChartNoAxesCombined, ShieldCheck, GraduationCap];
+const marketEssentials = [
   {
-    icon: ChartNoAxesCombined,
-    title: "Equity advisory",
-    category: "CASH MARKETS",
-    description: "Market research and portfolio discussion for listed equities, with attention to time horizon, concentration, and risk.",
+    title: "Stock market",
+    label: "EQUITY",
+    icon: Landmark,
+    description: "A share represents a small ownership interest in a company. Shares trade on exchanges such as NSE and BSE, where prices move with supply, demand, company results, and broader market conditions.",
+    takeaway: "Shareholders can lose some or all of the amount invested if a company performs poorly.",
+    details: [
+      "Companies issue shares to raise capital. After listing, investors generally buy and sell those shares from one another through an exchange.",
+      "A share price can respond to company earnings, business outlook, economic conditions, interest rates, and investor sentiment. Past performance does not predict future returns.",
+      "In India, investors typically hold securities in a demat account and place orders through a broker. Understand brokerage, taxes, and other charges before trading.",
+    ],
   },
   {
+    title: "Futures",
+    label: "DERIVATIVES",
     icon: TrendingUp,
-    title: "Futures & options",
-    category: "DERIVATIVES",
-    description: "Structured derivatives analysis focused on contract mechanics, scenario planning, and the risk of leverage and expiry.",
+    description: "A futures contract is an exchange-traded agreement to buy or sell an underlying asset at a specified price on a future date. Contracts have set lot sizes and expiry dates, and positions generally require margin.",
+    takeaway: "Leverage can magnify both gains and losses; losses can exceed the margin deposited.",
+    details: [
+      "Exchange-listed futures specify the underlying, contract size, expiry, and settlement terms. A futures position creates an obligation; it is not the same as owning the underlying shares.",
+      "Margin is a performance deposit, not a cap on possible losses. Exchanges and brokers may require additional funds when prices move against a position.",
+      "Before entering, understand mark-to-market settlement, expiry, applicable margin, liquidity, and how the position can be closed or settled.",
+    ],
   },
   {
-    icon: Wallet,
-    title: "Portfolio review",
-    category: "PORTFOLIO",
-    description: "A review of portfolio exposure, diversification, and stated investment objectives to support informed decisions.",
+    title: "Options",
+    label: "DERIVATIVES",
+    icon: Scale,
+    description: "A call option gives its buyer the right to buy, and a put gives the right to sell, under the contract terms. The buyer pays a premium; the option writer takes on an obligation if assigned.",
+    takeaway: "An option buyer can lose the premium paid; an uncovered option writer may face very large losses.",
+    details: [
+      "An option contract has an underlying, strike price, expiry, and premium. A call buyer has a right to buy and a put buyer has a right to sell according to the contract terms.",
+      "Option buyers can lose the premium paid if the option expires without value. Option sellers collect premium but take on obligations and may face substantial losses; uncovered call losses can be theoretically unlimited.",
+      "Premiums can change with the underlying price, time remaining, volatility, and other factors. Options are complex and can lose value quickly, including when the market moves sideways.",
+    ],
   },
   {
+    title: "Market hours (India)",
+    label: "TIME · IST",
+    icon: Compass,
+    description: "For the regular NSE/BSE equity market, the pre-open session is generally 9:00–9:15 a.m. IST and normal trading is generally 9:15 a.m.–3:30 p.m. IST on exchange business days.",
+    takeaway: "Exchange holidays, special sessions, and other market segments can have different schedules.",
+    details: [
+      "The pre-open session is a separate order-collection and price-discovery phase; it is not the same as continuous trading. The exchange publishes its specific phases and rules.",
+      "Regular cash-equity trading is generally 9:15 a.m. to 3:30 p.m. India Standard Time on trading days. Derivatives and other segments can have their own schedules.",
+      "Check the relevant exchange's current market-timings notice and holiday calendar before relying on a schedule. Special sessions can change the normal timetable.",
+    ],
+  },
+  {
+    title: "Before you trade",
+    label: "RISK CHECK",
     icon: ShieldCheck,
-    title: "Risk management",
-    category: "RISK & PROCESS",
-    description: "Practical risk conversations around position sizing, drawdowns, and understanding potential losses before a trade.",
+    description: "Know the contract size, expiry, charges, margin rules, and exit plan before placing an order. Derivative prices can change quickly, and a stop-loss does not guarantee a particular exit price.",
+    takeaway: "Use official exchange and regulator material; never treat an illustration as a return forecast.",
+    details: [
+      "Read the product and risk disclosures, understand all charges, and use only a broker/intermediary whose registration can be verified through SEBI or the relevant exchange.",
+      "Treat claims of assured or guaranteed returns with caution. Securities-market investments and trades are subject to risk; no card here is a recommendation or a promise of profit.",
+      "Never share passwords, PINs, or one-time passwords. Keep records such as contract notes and account statements, and contact the broker or exchange through verified channels if something looks wrong.",
+      "Regulatory requirements and exchange rules can change. Consult current SEBI and exchange notices for authoritative information.",
+    ],
   },
 ];
-
-function formatPrice(value) {
-  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value);
-}
 
 function Sidebar({ mobileOpen, closeMobile }) {
-  return (
-    <>
-      {mobileOpen && <button className="mobile-backdrop" aria-label="Close menu" onClick={closeMobile} />}
-      <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
-        <Link className="brand" to="/" onClick={closeMobile}>
-          <span className="brand-mark"><span /></span>
-          <span className="brand-name">infinity<span>capital</span></span>
-        </Link>
-        <p className="nav-caption">DASHBOARD</p>
-        <nav className="primary-nav" aria-label="Main navigation">
-          {navigation.map(({ label, path, icon: Icon }) => (
-            <NavLink key={path} to={path} end={path === "/"} onClick={closeMobile} className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-              <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-    </>
-  );
+  return <>
+    {mobileOpen && <button className="mobile-backdrop" aria-label="Close menu" onClick={closeMobile} />}
+    <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
+      <Link className="brand" to="/" onClick={closeMobile} aria-label="Infinity Capital home">
+        <svg className="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M20 20c-4.1-5.8-7.1-8-10.2-8a7.1 7.1 0 0 0 0 14.2c3.1 0 6.1-2.2 10.2-8s7.1-8 10.2-8a7.1 7.1 0 0 1 0 14.2c-3.1 0-6.1-2.2-10.2-8Z" />
+          <path className="brand-trend" d="m13.5 22 4.1-4.3 3.2 2.4 6.3-7" />
+          <path className="brand-arrow" d="M23.7 13.1h3.8v3.8" />
+        </svg>
+        <span className="brand-name">infinity<span>capital</span></span>
+      </Link>
+      <p className="nav-caption">MARKET INTELLIGENCE</p>
+      <nav className="primary-nav" aria-label="Main navigation">
+        {navigation.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} end={path === "/"} onClick={closeMobile} className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}><Icon size={17} /><span>{label}</span></NavLink>)}
+      </nav>
+      <div className="sidebar-note"><ShieldCheck size={16} /><span>Research with risk awareness</span></div>
+    </aside>
+  </>;
 }
 
 function Topbar({ title, onMenu }) {
-  return (
-    <header className="topbar">
-      <button className="mobile-menu" aria-label="Open menu" onClick={onMenu}><Menu size={21} /></button>
-      <div className="breadcrumbs"><span>Infinity Capital</span><span className="breadcrumb-slash">/</span><strong>{title}</strong></div>
-      <div className="topbar-actions">
-        <div className="market-status"><span className="status-dot" /> Market closed <span className="status-time">· 3:30 PM IST</span></div>
-      </div>
-    </header>
-  );
+  return <header className="topbar">
+    <button className="mobile-menu" aria-label="Open menu" onClick={onMenu}><Menu size={21} /></button>
+    <div className="breadcrumbs"><span>Infinity Capital</span><span className="breadcrumb-slash">/</span><strong>{title}</strong></div>
+    <div className="topbar-actions"><span className="market-status">Market data · provider widget</span></div>
+  </header>;
 }
 
-function QuoteStrip({ quotes }) {
-  return (
-    <div className="quote-strip">
-      <div className="quote-strip-label"><span className="status-dot" /> INDICES</div>
-      {quotes.map((quote) => (
-        <div className="quote-item" key={quote.symbol}>
-          <span className="quote-symbol">{quote.symbol}</span>
-          <strong>{formatPrice(quote.price)}</strong>
-          <span className={quote.change >= 0 ? "positive" : "negative"}>
-            {quote.change >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-            {Math.abs(quote.change).toFixed(2)}%
-          </span>
-        </div>
-      ))}
-      <span className="quote-source">Indicative data</span>
+function QuoteStrip() {
+  return <div className="quote-strip"><TradingViewEmbed type="ticker-tape" /></div>;
+}
+
+function MarketChartPanel({ compact = false }) {
+  return <article className={`panel chart-panel ${compact ? "chart-panel-compact" : ""}`}>
+    <div className="panel-heading">
+      <div><p className="eyebrow">MARKET CHART</p><h2>SENSEX</h2></div>
+      <span className="chart-provider-label">TradingView embed</span>
     </div>
-  );
+    <TradingViewEmbed symbol="BSE:SENSEX" />
+    <div className="chart-meta"><span>Use the chart’s symbol search to explore other instruments.</span><a className="text-link" href="https://www.tradingview.com/chart/?symbol=BSE%3ASENSEX" target="_blank" rel="noreferrer">Open in TradingView</a></div>
+  </article>;
 }
 
-function InstrumentsTable({ items }) {
-  return (
-    <div className="table-scroll"><table><thead><tr><th>INSTRUMENT</th><th>TYPE</th><th>LAST PRICE</th><th>CHANGE</th><th /></tr></thead><tbody>
-      {items.map((item) => <tr key={item.symbol}><td><div className="instrument-name"><strong>{item.symbol}</strong><span>{item.name}</span></div></td><td><span className="type-pill">{item.type}</span></td><td className="table-price">₹{item.price}</td><td><span className={item.positive ? "change-pill positive-bg" : "change-pill negative-bg"}>{item.positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{item.change}</span></td><td><button className="row-more" aria-label={`More about ${item.symbol}`}><MoreHorizontal size={18} /></button></td></tr>)}
-    </tbody></table></div>
-  );
+function Overview({ services }) {
+  const [expandedMarketCard, setExpandedMarketCard] = useState(null);
+
+  return <>
+    <section className="hero-panel">
+      <div className="hero-copy"><p className="eyebrow">MARKET INTELLIGENCE · ADVISORY</p><h1>Clarity for your<br /><span>market decisions.</span></h1><p>Independent market perspectives, considered analysis, and risk-aware advisory for every market cycle.</p><div className="hero-actions"><Link className="button button-green" to="/services">Explore advisory <ArrowRight size={15} /></Link><Link className="hero-link" to="/markets">View live markets <TrendingUp size={15} /></Link></div></div>
+      <div className="hero-visual" aria-hidden="true"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-chart-line"><span /><span /><span /><span /><span /><span /><span /></div>      <div className="hero-visual-caption">ILLUSTRATIVE MOTIF · NOT LIVE DATA</div></div>
+    </section>
+    <section className="section-heading"><div><p className="eyebrow">INDIAN MARKETS</p><h2>Explore market prices</h2></div><Link className="text-link" to="/markets">Open market explorer <ArrowRight size={14} /></Link></section>
+    <MarketChartPanel compact />
+    <p className="market-widget-disclaimer"><ShieldCheck size={14} /> Market charts and quotes are embedded from TradingView. Data may be delayed or unavailable for some instruments and exchanges. For exploration only—not for trading or investment decisions.</p>
+    <section className="market-essentials" aria-labelledby="market-essentials-title">
+      <div className="section-heading"><div><p className="eyebrow">KNOW THE BASICS</p><h2 id="market-essentials-title">Market essentials</h2></div><span className="market-education-label">General information · not investment advice</span></div>
+      <div className="market-essentials-grid">
+        {marketEssentials.map(({ title, label, icon: Icon, description, takeaway, details }) => {
+          const isExpanded = expandedMarketCard === title;
+          const detailsId = `market-knowledge-details-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+          return <article className={`panel market-knowledge-card ${isExpanded ? "is-expanded" : ""}`} key={title}>
+            <button
+              className="market-knowledge-trigger"
+              type="button"
+              aria-expanded={isExpanded}
+              aria-controls={detailsId}
+              onClick={() => setExpandedMarketCard(isExpanded ? null : title)}
+            >
+              <span className="market-knowledge-heading"><span className="service-icon"><Icon size={17} /></span><span className="market-knowledge-label">{label}</span></span>
+              <span className="market-knowledge-title">{title}</span>
+              <span className="market-knowledge-description">{description}</span>
+              <span className="market-card-takeaway"><strong>Key point</strong><span>{takeaway}</span></span>
+              <span className="market-card-link">{isExpanded ? "Hide details" : "Read more"}<ArrowRight size={13} aria-hidden="true" /></span>
+            </button>
+            {isExpanded && <div className="market-knowledge-details" id={detailsId}>
+              <h4>More about {title.toLowerCase()}</h4>
+              <ul>{details.map((detail) => <li key={detail}>{detail}</li>)}</ul>
+            </div>}
+          </article>;
+        })}
+      </div>
+      <p className="market-education-disclaimer">General educational information only—not investment, legal, or tax advice, and not a recommendation to buy or sell. Regulations and exchange schedules may change; verify current details with SEBI and the relevant exchange.</p>
+    </section>
+    {services?.length > 0 && <section className="service-preview"><div className="section-heading"><div><p className="eyebrow">HOW WE HELP</p><h2>Advisory for every approach</h2></div><Link className="text-link" to="/services">All services <ArrowRight size={14} /></Link></div><div className="preview-grid">{services.slice(0, 3).map((service) => <article className="panel preview-card" key={service.id}><span className="service-icon"><BriefcaseBusiness size={17} /></span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div></section>}
+  </>;
 }
 
-function Overview({ snapshot, period, setPeriod }) {
-  const sampleNetPnl = sampleClientResults.reduce((total, result) => total + result.pnl, 0);
-
-  return (
-    <>
-      <section className="welcome-row">
-        <div><p className="eyebrow">{new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }).format(new Date()).toUpperCase()} <span>·</span> MARKET OVERVIEW</p><h1>Market overview</h1><p className="welcome-subtitle">A clear view of markets and advisory services.</p></div>
-        <Link className="button button-dark" to="/services"><BriefcaseBusiness size={15} /> Explore our services <ArrowRight size={15} /></Link>
-      </section>
-      <section className="overview-grid">
-        <article className="panel chart-panel">
-          <div className="panel-heading">
-            <div><div className="panel-title-row"><h2>NIFTY 50</h2><span className="exchange-tag">NSE</span></div><p className="index-value">{formatPrice(snapshot.quotes[0]?.price ?? 0)} <span className="positive">+0.84%</span></p></div>
-            <div className="period-switch" aria-label="Chart period">{["1D", "1W", "1M", "1Y"].map((item) => <button key={item} className={period === item ? "selected" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div>
-          </div>
-          <div className="chart-meta"><span><span className="legend-dot" /> NIFTY 50</span><span>As of 3:30 PM IST</span></div>
-          <Suspense fallback={<div className="chart-loading">Loading chart…</div>}><MarketChart series={snapshot.series} /></Suspense>
-          <div className="chart-footnote"><span>Day range</span><span>24,510.20</span><div className="range-track"><i /></div><span>24,873.65</span></div>
-        </article>
-        <aside className="panel sentiment-panel">
-          <div className="panel-heading"><div><p className="eyebrow">MARKET PULSE</p><h2>Today at a glance</h2></div><span className="pulse-icon"><TrendingUp size={17} /></span></div>
-          <div className="sentiment-meter"><div className="meter-track"><span /></div><div className="meter-labels"><span>Bearish</span><span>Neutral</span><span>Bullish</span></div></div>
-          <div className="sentiment-result"><span className="result-dot" /><strong>Moderately positive</strong><span>+0.7</span></div>
-          <p className="sentiment-note">Broad market indices closed higher. Sentiment indicators are informational and not a prediction.</p>
-          <div className="sentiment-stats"><div><span>Advances</span><strong className="positive">1,482</strong></div><div><span>Declines</span><strong className="negative">1,106</strong></div><div><span>Unchanged</span><strong>94</strong></div></div>
-          <Link className="text-link" to="/markets">View market details <ArrowRight size={14} /></Link>
-        </aside>
-      </section>
-      <section className="panel client-pnl-panel">
-        <div className="panel-heading client-pnl-heading">
-          <div><p className="eyebrow">DAILY CLIENT PERFORMANCE</p><h2>Client P&amp;L snapshot</h2></div>
-          <span className="sample-label">SAMPLE DATA</span>
-        </div>
-        <div className="client-pnl-summary"><span>Illustrative net P&amp;L</span><strong className={sampleNetPnl >= 0 ? "positive" : "negative"}>{sampleNetPnl >= 0 ? "+" : "−"}₹{formatPrice(Math.abs(sampleNetPnl))}</strong><small>Example only · not actual client results</small></div>
-        <div className="table-scroll"><table><thead><tr><th>ANONYMIZED CLIENT</th><th>DAILY P&amp;L</th><th>RECORD TYPE</th></tr></thead><tbody>
-          {sampleClientResults.map(({ client, pnl }) => <tr key={client}><td><strong className="client-mask">{client}</strong></td><td className={pnl >= 0 ? "positive" : "negative"}>{pnl >= 0 ? "+" : "−"}₹{formatPrice(Math.abs(pnl))}</td><td><span className="type-pill">Illustrative</span></td></tr>)}
-        </tbody></table></div>
-        <p className="client-pnl-note"><ShieldCheck size={14} /> These fabricated examples are not real client data, verified performance, or a promise of future returns. Replace them only with accurate, authorized records and required disclosures.</p>
-      </section>
-      <section className="panel instruments-panel">
-        <div className="panel-heading instruments-heading"><div><p className="eyebrow">YOUR WATCHLIST</p><h2>Keeping an eye on</h2></div><Link className="view-all-button" to="/markets">All markets <ArrowRight size={14} /></Link></div>
-        <InstrumentsTable items={instruments.slice(0, 3)} />
-      </section>
-      <section className="disclosure"><ShieldCheck size={15} /><span>{snapshot.isDemo ? "Sample figures for demonstration only. Not live market data." : "Market data is provided for informational purposes only."} This is not investment advice. Securities investments are subject to market risks.</span><Link to="/services">Advisory services <ArrowRight size={12} /></Link></section>
-    </>
-  );
-}
-
-function Markets({ snapshot }) {
+function Markets() {
   return <section className="page-section">
-    <div className="page-heading"><div><p className="eyebrow">EXPLORE THE MARKET</p><h1>Markets</h1><p className="welcome-subtitle">Track indicative prices across indices, equities and derivatives.</p></div><span className="data-badge"><span className="status-dot" /> {snapshot.isDemo ? "Demo data" : "Market data"}</span></div>
-    <div className="market-cards">{snapshot.quotes.map((quote) => <article className="panel market-card" key={quote.symbol}><span className="market-card-symbol">{quote.symbol}</span><strong>{formatPrice(quote.price)}</strong><span className={quote.change >= 0 ? "positive" : "negative"}>{quote.change >= 0 ? "+" : ""}{quote.change.toFixed(2)}% today</span><div className="mini-chart"><Suspense fallback={<div className="chart-loading compact">Loading…</div>}><MarketChart series={snapshot.series} compact /></Suspense></div></article>)}</div>
-    <article className="panel market-table-panel"><div className="panel-heading"><div><p className="eyebrow">POPULAR INSTRUMENTS</p><h2>Stocks & derivatives</h2></div><span className="filter-button">Indicative prices</span></div><InstrumentsTable items={instruments} /></article>
-    <p className="inline-disclaimer"><ShieldCheck size={14} /> Prices shown are illustrative. Configure an authorized market-data provider for live quotes.</p>
+    <div className="page-heading"><div><p className="eyebrow">NSE · BSE · MARKET DATA</p><h1>Markets</h1><p className="welcome-subtitle">Explore Indian indices and selected equities with an embedded market chart.</p></div><span className="data-badge">TradingView widget</span></div>
+    <MarketChartPanel />
+    <p className="market-widget-disclaimer"><ShieldCheck size={14} /> Market charts and quotes are embedded from TradingView. Data timing, availability, and exchange coverage are controlled by the provider and may vary. This display is for exploration only; verify data and disclosures before making financial decisions.</p>
   </section>;
 }
 
-function Services() {
+function Services({ services, loading, error }) {
   return <section className="page-section">
-    <div className="page-heading"><div><p className="eyebrow">INFINITY CAPITAL</p><h1>Advisory services</h1><p className="welcome-subtitle">Service areas for investors and market participants.</p></div><span className="data-badge"><ShieldCheck size={14} /> Risk-aware approach</span></div>
-    <div className="service-notice"><ShieldCheck size={18} /><div><strong>Clear, responsible advisory.</strong><p>Service availability, advice, and products are subject to applicable registration, eligibility, and regulatory requirements. This page is informational and does not provide a recommendation to buy or sell.</p></div></div>
-    <div className="service-grid">{services.map(({ icon: Icon, title, category, description }) => <article className="panel service-card" key={title}><span className="service-icon"><Icon size={19} /></span><p className="eyebrow">{category}</p><h2>{title}</h2><p>{description}</p><span className="service-detail"><ShieldCheck size={13} /> Suitability and risk disclosures apply</span></article>)}</div>
-    <p className="service-footnote">Confirm your firm’s registration details, service scope, fees, and required disclosures before publishing this page or offering regulated advisory services.</p>
+    <div className="page-heading"><div><p className="eyebrow">INFINITY CAPITAL</p><h1>Advisory services</h1><p className="welcome-subtitle">Research, education, and considered support across Indian markets.</p></div><span className="data-badge"><ShieldCheck size={14} /> Risk-aware approach</span></div>
+    <div className="service-notice"><ShieldCheck size={18} /><div><strong>Clear, responsible advisory.</strong><p>Service availability and advice are subject to applicable registration, eligibility, and regulatory requirements. This information does not recommend buying or selling any security.</p></div></div>
+    {loading ? <div className="empty-panel panel">Loading advisory services…</div> : error ? <div className="empty-panel panel error-message" role="alert">{error}</div> : !services.length ? <div className="empty-panel panel">No advisory services are published yet.</div> : <div className="service-grid">{services.map((service, index) => { const Icon = serviceIcons[index % serviceIcons.length]; return <article className="panel service-card" key={service.id}><span className="service-icon"><Icon size={19} /></span><p className="eyebrow">{service.category}</p><h2>{service.title}</h2><p>{service.description}</p><span className="service-detail"><ShieldCheck size={13} /> Suitability and risk disclosures apply</span></article>; })}</div>}
+    <section className="contact-panel" id="contact"><div><p className="eyebrow">START A CONVERSATION</p><h2>Thoughtful guidance starts with a clear brief.</h2><p>Contact our team to learn about service scope, suitability, fees, and applicable disclosures.</p></div>{import.meta.env.VITE_ADVISORY_CONTACT_EMAIL ? <a className="button button-green" href={`mailto:${import.meta.env.VITE_ADVISORY_CONTACT_EMAIL}`}>Contact advisory <ArrowRight size={15} /></a> : <span className="contact-unavailable">Contact details not configured</span>}</section>
+    <p className="service-footnote">Confirm your firm’s registration details, service scope, fees, and required disclosures before offering regulated advisory services.</p>
   </section>;
 }
 
 function NotFound() {
-  return <section className="page-section not-found"><span className="learning-icon"><Compass size={18} /></span><h1>Page not found</h1><p>That page isn’t part of this dashboard.</p><Link className="button button-dark" to="/">Back to overview <ArrowRight size={15} /></Link></section>;
+  return <section className="page-section not-found"><span className="learning-icon"><Compass size={18} /></span><h1>Page not found</h1><Link className="button button-green" to="/">Back to overview <ArrowRight size={15} /></Link></section>;
 }
 
 function App() {
-  const [snapshot, setSnapshot] = useState({ quotes: [], series: [], isDemo: true });
-  const [period, setPeriod] = useState("1D");
-  const [marketError, setMarketError] = useState("");
+  const [services, setServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     let active = true;
-    getMarketSnapshot(period)
-      .then((data) => { if (active) { setSnapshot(data); setMarketError(""); } })
-      .catch((error) => { if (active) setMarketError(error.message); });
+    getAdvisoryServices().then((data) => { if (active) setServices(Array.isArray(data) ? data : data.services ?? []); })
+      .catch((error) => { if (active) setServicesError(error.message); })
+      .finally(() => { if (active) setServicesLoading(false); });
     return () => { active = false; };
-  }, [period]);
+  }, []);
 
-  const activePage = navigation.find(({ path }) => path === location.pathname);
-  const title = activePage?.label ?? "Overview";
-
+  const title = navigation.find(({ path }) => path === location.pathname)?.label ?? "Overview";
   return <div className="app-shell">
     <Sidebar mobileOpen={mobileOpen} closeMobile={() => setMobileOpen(false)} />
-    <main className="main-area">
-      <Topbar title={title} onMenu={() => setMobileOpen(true)} />
-      {snapshot.quotes.length > 0 && <QuoteStrip quotes={snapshot.quotes} />}
-      {marketError && <div className="market-error" role="alert">{marketError}</div>}
-      <div className="content-area">
-        <Routes>
-          <Route path="/" element={snapshot.quotes.length ? <Overview snapshot={snapshot} period={period} setPeriod={setPeriod} /> : <div className="loading-state">Loading market snapshot…</div>} />
-          <Route path="/markets" element={<Markets snapshot={snapshot} />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-      <footer className="footer"><span>© 2026 Infinity Capital</span><span>Risk disclosures apply</span></footer>
+    <main className="main-area"><Topbar title={title} onMenu={() => setMobileOpen(true)} />
+      <QuoteStrip />
+      <div className="content-area"><Routes>
+        <Route path="/" element={<Overview services={services} />} />
+        <Route path="/markets" element={<Markets />} />
+        <Route path="/services" element={<Services services={services} loading={servicesLoading} error={servicesError} />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes></div>
+      <footer className="footer"><span>© {new Date().getFullYear()} Infinity Capital</span><span>Market data may be delayed · Risk disclosures apply</span></footer>
     </main>
   </div>;
 }

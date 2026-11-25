@@ -1,45 +1,31 @@
 # Infinity Capital
 
-A React single-page market dashboard for stock and futures/options education. The interface uses Vite, React Router, Recharts, and Lucide icons.
+Responsive React/Vite advisory website with TradingView market widgets and an API-backed advisory-services catalog.
 
 ## Run locally
 
-```sh
+```powershell
 npm install
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Create a production build with `npm run build`, then preview it with `npm run preview`.
+Set `VITE_API_BASE_URL` to the Spring Boot API origin (default `http://localhost:8080`). Set `VITE_ADVISORY_CONTACT_EMAIL` to a verified company contact address to enable the contact link; it is intentionally blank until configured. Only public frontend settings belong in `VITE_*` variables—never place provider tokens or database credentials there.
+
+Build and preview with `npm run build` and `npm run preview`.
 
 ## Pages
 
-- `/` — market overview, index chart, and watchlist
-- `/markets` — indicative indices, equities, and derivatives
-- `/services` — equity, derivatives, portfolio review, and risk-management service overview
+- `/` — market overview, embedded SENSEX ticker and chart
+- `/markets` — TradingView chart with provider symbol search for other supported instruments
+- `/services` — advisory services loaded from the backend API
 
-## Market data
+## Market widgets
 
-By default, the app uses clearly labeled sample data. To connect a market-data service, copy `.env.example` to `.env.local` and set `VITE_MARKET_API_URL` to your backend base URL. The frontend requests:
+Market charts are embedded in direct TradingView iframes and do not require a market-data API key. The SENSEX is used as the default because it is available in the embedded data feed; use the chart toolbar's symbol search to explore other supported instruments. The provider controls availability and whether quotes are delayed. Widgets need an internet connection and may be blocked by browser extensions, network policy, or content-security settings.
 
-```text
-GET {VITE_MARKET_API_URL}/market/snapshot?period=1D
-```
+The overview also includes expandable, on-page general information about equities, futures, options, Indian market hours, and basic risk checks. The cards do not navigate away or provide personalized trading recommendations. Market hours and regulatory details can change, so verify current information with the relevant exchange or regulator.
 
-Supported `period` values are `1D`, `1W`, `1M`, and `1Y`. The JSON response must include `quotes` and `series` arrays:
+The frontend uses `GET /api/advisory/services` from the Spring Boot API. The backend's `/api/market/snapshot`, `/api/dashboard`, and stock-analysis routes remain available for a future configured provider but are not used by the current market widgets. See the backend README for the normalized upstream market-provider contract.
 
-```json
-{
-  "quotes": [
-    { "symbol": "NIFTY 50", "price": 24873.65, "change": 0.84 }
-  ],
-  "series": [
-    { "time": "09:15", "value": 24510 }
-  ]
-}
-```
-
-Use an authorized market-data provider and configure the backend to handle its credentials and CORS policy. Do not expose provider secrets in frontend environment variables.
-
-## Important
-
-Market values shown without a configured API are fictional demo figures, not live quotes. The daily client P&L panel also contains fabricated sample entries, not actual client information or verified performance. Replace it only with accurate, authorized records and required disclosures. Derivatives involve substantial risk. This website is not a recommendation to buy or sell; confirm applicable registrations, service scope, and disclosures before offering regulated services.
+Market widgets are for exploration only and are not for trading or investment decisions. Quote timing and availability vary. This website does not execute trades or provide a recommendation to buy or sell. Confirm registrations, service scope, and applicable disclosures before offering regulated services.
