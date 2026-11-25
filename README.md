@@ -1,0 +1,2 @@
+# infinitycaptial
+stocks trading
